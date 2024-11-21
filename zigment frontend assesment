@@ -1,0 +1,117 @@
+[
+  {
+    "trigger": {
+      "type": "google_forms",
+      "event": "new_response",
+      "form_id": "YOUR_FORM_ID"
+    }
+  },
+  {
+    "action": {
+      "type": "code",
+      "language": "javascript",
+      "script": "const scores = {\n  'Company Size': {\n    '1-50 employees': 10,\n    '51-200 employees': 20,\n    '201-1000 employees': 30,\n    '1000+ employees': 40\n  },\n  'Annual Budget': {\n    'Less than $10,000': 10,\n    '$10,000-$50,000': 20,\n    '$50,001-$100,000': 30,\n    'More than $100,000': 40\n  },\n  'Industry': {\n    'Technology': 30,\n    'Finance': 25,\n    'Healthcare': 20,\n    'Retail': 15,\n    'Other': 10\n  },\n  'Urgency of Need': {\n    'Immediate': 40,\n    'Short-term': 30,\n    'Medium-term': 20,\n    'Long-term': 10\n  }\n};\n\nlet leadScore = 0;\nfor (const key in scores) {\n  leadScore += scores[key][inputData[key]] || 0;\n}\n\nreturn { leadScore };",
+      "input": {
+        "Company Size": "{{trigger.Company Size}}",
+        "Annual Budget": "{{trigger.Annual Budget}}",
+        "Industry": "{{trigger.Industry}}",
+        "Urgency of Need": "{{trigger.Urgency of Need}}"
+      },
+      "output": {
+        "Lead Score": "{{leadScore}}"
+      }
+    }
+  },
+  {
+    "action": {
+      "type": "google_sheets",
+      "method": "append_row",
+      "spreadsheet_id": "YOUR_SPREADSHEET_ID",
+      "sheet_name": "Qualified Leads",
+      "fields": {
+        "Name": "{{trigger.Name}}",
+        "Email": "{{trigger.Email}}",
+        "Company Size": "{{trigger.Company Size}}",
+        "Annual Budget": "{{trigger.Annual Budget}}",
+        "Industry": "{{trigger.Industry}}",
+        "Urgency of Need": "{{trigger.Urgency of Need}}",
+        "Lead Score": "{{action.Lead Score}}"
+      }
+    }
+  },
+  {
+    "action": {
+      "type": "path",
+      "name": "High Scoring Leads",
+      "conditions": [
+        {
+          "field": "Lead Score",
+          "operator": ">",
+          "value": 70
+        }
+      ],
+      "actions": [
+        {
+          "type": "gmail",
+          "method": "send_email",
+          "to": "{{trigger.Email}}",
+          "subject": "Welcome to TechNova!",
+          "body": "Dear {{trigger.Name}},\n\nWelcome to TechNova! We're excited to have you on board.\n\nBest regards,\n[Your Name]"
+        }
+      ]
+    }
+  },
+  {
+    "action": {
+      "type": "path",
+      "name": "Low Scoring Leads",
+      "conditions": [
+        {
+          "field": "Lead Score",
+          "operator": "<=",
+          "value": 70
+        }
+      ],
+      "actions": [
+        {
+          "type": "google_sheets",
+          "method": "append_row",
+          "spreadsheet_id": "YOUR_SPREADSHEET_ID",
+          "sheet_name": "Nurturing Campaigns",
+          "fields": {
+            "Name": "{{trigger.Name}}",
+            "Email": "{{trigger.Email}}",
+            "Company Size": "{{trigger.Company Size}}",
+            "Annual Budget": "{{trigger.Annual Budget}}",
+            "Industry": "{{trigger.Industry}}",
+            "Urgency of Need": "{{trigger.Urgency of Need}}",
+            "Lead Score": "{{action.Lead Score}}"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "action": {
+      "type": "filter",
+      "conditions": [
+        {
+          "field": "Company Size",
+          "operator": "is_not_empty"
+        },
+        {
+          "field": "Annual Budget",
+          "operator": "is_not_empty"
+        },
+        {
+          "field": "Industry",
+          "operator": "is_not_empty"
+        },
+        {
+          "field": "Urgency of Need",
+          "operator": "is_not_empty"
+        }
+      ]
+    }
+  }
+]
